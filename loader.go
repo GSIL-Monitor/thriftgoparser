@@ -3,18 +3,17 @@ package main
 import (
 	"time"
 	"fmt"
-	"github.com/AfLnk/thriftgoparser/db"
 	"github.com/AfLnk/thriftgoparser/proto"
 )
 
 var(
-	G_TypeCache map[string] *db.IDLType
-	G_FuncCache map[string] *db.IDLFunction
+	G_TypeCache map[string] *IDLType
+	G_FuncCache map[string] *IDLFunction
 )
 
 func load_types(){
-	newTypeCache := make(map[string] *db.IDLType)
-	err := db.LoadTypesFromDb(newTypeCache)
+	newTypeCache := make(map[string] *IDLType)
+	err := LoadTypesFromDb(newTypeCache)
 	if err != nil{
 		fmt.Printf("LoadTypes failed%s\n", err.Error())
 		return
@@ -26,8 +25,8 @@ func load_types(){
 }
 
 func load_functions() {
-	newFuncCache := make(map[string]*db.IDLFunction)
-	err := db.LoadFunctionsFromDb(newFuncCache)
+	newFuncCache := make(map[string]*IDLFunction)
+	err := LoadFunctionsFromDb(newFuncCache)
 	if err != nil {
 		fmt.Printf("LoadTypes failed:%s\n", err.Error())
 		return
@@ -39,7 +38,7 @@ func load_functions() {
 }
 
 func InitLoader(db_usr, db_passwd, db_host string, db_port uint16){
-	db.InitMysql(db_usr, db_passwd, db_host, db_port)
+	InitMysql(db_usr, db_passwd, db_host, db_port)
 	go func(){
 		load_types()
 		load_functions()
@@ -57,7 +56,7 @@ func InitLoader(db_usr, db_passwd, db_host string, db_port uint16){
 }
 
 
-func GetIDLType(typename string) (*db.IDLType, error){
+func GetIDLType(typename string) (*IDLType, error){
 	// 先判断是否基础类型
 	fmt.Printf("type cache:%v\n", G_TypeCache)
 	result, ok := G_TypeCache[typename]
@@ -68,7 +67,7 @@ func GetIDLType(typename string) (*db.IDLType, error){
 	return nil, fmt.Errorf("Type not exist")
 }
 
-func get_function(psm string, servicename string) (*db.IDLFunction, error){
+func get_function(psm string, servicename string) (*IDLFunction, error){
 	fmt.Printf("nservice cache:%v\n", G_FuncCache)
 	real_service_name := psm + servicename
 	result, ok := G_FuncCache[real_service_name]
@@ -81,7 +80,7 @@ func get_function(psm string, servicename string) (*db.IDLFunction, error){
 
 // 查询请求包的节点信息
 // 节点的Key为name
-func GetReqType(psm string, service string) (*db.IDLType, error) {
+func GetReqType(psm string, service string) (*IDLType, error) {
 	idlService, err := get_function(psm, service)
 	if err != nil{
 		return nil, fmt.Errorf("GetService fail.")
@@ -97,13 +96,13 @@ func GetReqType(psm string, service string) (*db.IDLType, error) {
 
 // 查询请求包的节点信息
 // 节点的Key为name
-func GetReqTypes(psm string, service string) (map[int16]*db.IDLType, error) {
+func GetReqTypes(psm string, service string) (map[int16]*IDLType, error) {
 	idlService, err := get_function(psm, service)
 	if err != nil{
 		return nil, fmt.Errorf("GetService fail.")
 	}
 
-	ret := make(map[int16]*db.IDLType)
+	ret := make(map[int16]*IDLType)
 
 	idlType1, _ := GetIDLType(idlService.ReqType1)
 	if idlType1 != nil{
@@ -155,7 +154,7 @@ func GetReqTypes(psm string, service string) (map[int16]*db.IDLType, error) {
 
 // 查询相应包中的节点信息
 // 节点的key为tag
-func GetRspType(psm string, service string) (*db.IDLType, error) {
+func GetRspType(psm string, service string) (*IDLType, error) {
 	idlFunc, err := get_function(psm, service)
 	if err != nil{
 		return nil, fmt.Errorf("GetService fail.")
@@ -181,10 +180,10 @@ func CreateNewList(tlist *proto.TList) (string, error){
 
 	newName := fmt.Sprintf("LIST:<%s>", val_id)
 
-	newList := new(db.IDLType)
-	newList.TagMembers = make(map[int32]*db.IDLMember)
+	newList := new(IDLType)
+	newList.TagMembers = make(map[int32]*IDLMember)
 
-	elem := new(db.IDLMember)
+	elem := new(IDLMember)
 	elem.TypeName = newName
 	elem.FieldTag = 0
 	elem.FieldName = "VALUE"
@@ -192,7 +191,7 @@ func CreateNewList(tlist *proto.TList) (string, error){
 	elem.FieldTypeId = val_id
 	newList.TagMembers[0] = elem
 
-	db.InsertIdlType(newList)
+	InsertIdlType(newList)
 
 	return newName, nil
 }
@@ -210,12 +209,12 @@ func CreateNewMap(tmap *proto.TMap) (string, error){
 	}
 
 	newName := fmt.Sprintf("MAP:<%s, %s>", keyType, val_id)
-	newMap := new(db.IDLType)
-	newMap.TagMembers = make(map[int32]*db.IDLMember)
+	newMap := new(IDLType)
+	newMap.TagMembers = make(map[int32]*IDLMember)
 
 	newMap.SetName(newName)
 
-	key := new(db.IDLMember)
+	key := new(IDLMember)
 	key.TypeName = newName
 	key.FieldTag = 1
 	key.FieldName = "KEY"
@@ -223,7 +222,7 @@ func CreateNewMap(tmap *proto.TMap) (string, error){
 	key.FieldTypeId = keyType
 	newMap.TagMembers[key.FieldTag] = key
 
-	val := new(db.IDLMember)
+	val := new(IDLMember)
 	val.TypeName = newName
 	val.FieldTag = 0
 	val.FieldName = "VALUE"
@@ -231,7 +230,7 @@ func CreateNewMap(tmap *proto.TMap) (string, error){
 	val.FieldTypeId = val_id
 	newMap.TagMembers[val.FieldTag] = val
 
-	db.InsertIdlType(newMap)
+	InsertIdlType(newMap)
 
 	return newName, nil
 }
@@ -244,10 +243,10 @@ func CreateNewSet(tset *proto.TSet) (string, error){
 
 	newName := fmt.Sprintf("SET:<%s>", val_id)
 
-	newSet := new(db.IDLType)
-	newSet.TagMembers = make(map[int32]*db.IDLMember)
+	newSet := new(IDLType)
+	newSet.TagMembers = make(map[int32]*IDLMember)
 
-	elem := new(db.IDLMember)
+	elem := new(IDLMember)
 	elem.TypeName = newName
 	elem.FieldTag = 0
 	elem.FieldName = "VALUE"
@@ -255,7 +254,7 @@ func CreateNewSet(tset *proto.TSet) (string, error){
 	elem.FieldTypeId = val_id
 	newSet.TagMembers[0] = elem
 
-	db.InsertIdlType(newSet)
+	InsertIdlType(newSet)
 
 	return newName, nil
 }
@@ -292,13 +291,13 @@ func GenerateTypeAndId(caftype proto.ICafType) (string, string, error){
 
 func InsertOrUpdateStruct(ts *proto.TStruct){
 	fmt.Printf("[Struct]name:%s, number_count:%d\n", ts.GetName(), len(ts.GetMembers()))
-	dbIDLType := new(db.IDLType)
-	dbIDLType.TagMembers = make(map[int32]*db.IDLMember)
+	dbIDLType := new(IDLType)
+	dbIDLType.TagMembers = make(map[int32]*IDLMember)
 	dbIDLType.SetName(GetStructTypeId(ts))
 
 	for _, v := range ts.GetMembers() {
 		fmt.Printf("[Member]%d %s %s\n", v.GetKey(), v.GetName(), v.GetType().GetName())
-		idlMember :=  new(db.IDLMember)
+		idlMember :=  new(IDLMember)
 		idlMember.TypeName = dbIDLType.GetName()
 		idlMember.FieldTag = v.GetKey()
 		idlMember.FieldName = v.GetName()
@@ -312,6 +311,6 @@ func InsertOrUpdateStruct(ts *proto.TStruct){
 		dbIDLType.TagMembers[idlMember.FieldTag] = idlMember
 	}
 
-	err := db.InsertIdlType(dbIDLType)
+	err := InsertIdlType(dbIDLType)
 	fmt.Println(err)
 }
