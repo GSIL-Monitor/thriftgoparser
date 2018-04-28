@@ -1,0 +1,54 @@
+namespace go caf.oa.test
+
+struct CAFHead{
+    1: string user_id, // 用户ID
+}
+
+struct DoTestReq {
+    1: CAFHead head;         // 包头
+    2: string test_case_id, // 测试用例id
+  100: map<string, CAFHead> import_values, // 参数列表
+}
+ 
+struct DoTestRsp {
+    1: CAFHead head;         // 包头
+    2: string test_case_id, // 测试用例id
+  100: map<string, string> export_values, // 参数列表
+  101: string req_bytes,    // 请求包
+  102: string rsp_bytes,    // 相应包
+  103: i32 cost,         // 耗时
+}
+
+struct CreateCaseReq {
+    1: string TestProtoId,  // 是哪个协议的Case
+    2: string ServiceId,    // 在哪个Service下面
+    3: string ReqContent,   // 请求包: xml
+    4: string RspContent,   // 响应包: xml
+}
+
+struct CreateCaseRsp {
+    1: string Resp,
+    2: map<i32, map<i32, map<i32, string> > > haha,
+}
+
+
+struct CreateProtoReq {
+    1: string Name,
+    2: string Password,
+}
+
+struct CreatProtoRsp {
+    1: string Resp,
+}
+
+struct CreatePkgFormatReq{
+
+}
+
+struct CreatePkgFormatRsp{
+
+}
+
+service CAFTestService {
+    CreateCaseRsp  Fuckyou(1: CreateCaseReq req)
+}
